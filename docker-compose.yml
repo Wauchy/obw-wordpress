@@ -1,0 +1,82 @@
+version: '3'
+
+networks:
+  # enable connection with Traefik
+  proxy:
+    external: true
+  # network for the app
+  internal:
+
+services:
+
+  wordpress:
+    container_name: obw
+    build:
+      # call the Dockerfile in ./wordpress
+      context: ./wordpress
+    restart: always
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      # Connect WordPrerss to the database
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: obw_db
+      WORDPRESS_DB_PASSWORD: Zz0s84QTmfu3
+      WORDPRESS_DB_NAME: obw-db
+    volumes:
+      # save the content of WordPress an enable local modifications
+      - ./wordpress/data:/var/www/html
+    networks:
+      - proxy
+      - internal
+    depends_on:
+        - db
+        - redis
+    labels:
+      # The labels are usefull for Traefik only
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      # Get the routes from https
+      - "traefik.http.routers.obw-secured.rule=Host(`obw.vaus.ee`,`www.obw.vaus.ee`)"
+      - "traefik.http.routers.obw-secured.entrypoints=websecure"
+
+  db:
+    # this is the database used by Wordpress
+    image: mysql:5.7
+    container_name: obw-db
+    restart: always
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      # Connect WordPrerss to the database
+      MYSQL_DATABASE: obw-db
+      MYSQL_USER: obw_db
+      MYSQL_PASSWORD: Zz0s84QTmfu3
+      MYSQL_RANDOM_ROOT_PASSWORD: '1'
+    volumes:
+      # Persist the database on disk
+      - ./db:/var/lib/mysql
+    networks:
+      - internal
+
+
+  redis:
+    image: redis:6
+    container_name: obw-redis
+    restart: always
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "6389:6389"
+    networks:
+      - internal
+    # launch Redis in cache mode with :
+    #  - max memory up to 50% of your RAM if needed (--maxmemory 512mb)
+    #  - deleting oldest data when max memory is reached (--maxmemory-policy allkeys-lru)
+    entrypoint: redis-server --maxmemory 512mb -maxmemory-policy allkeys-lru
