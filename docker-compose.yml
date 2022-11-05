@@ -39,7 +39,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
       # Get the routes from https
-      - "traefik.http.routers.obw-secured.rule=Host(`obw.vaus.ee`,`www.obw.vaus.ee`)"
+      - "traefik.http.routers.obw-secured.rule=Host(`fuckqatar.lol`,`www.fuckqatar.lol`)"
       - "traefik.http.routers.obw-secured.entrypoints=websecure"
 
   db:
